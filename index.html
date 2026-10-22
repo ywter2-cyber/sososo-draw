@@ -463,7 +463,7 @@ $("#shopName").textContent = SHOP.name;
 $("#heroMeta").textContent = SHOP.heroMeta;
 $("#heroLine").innerHTML = SHOP.heroLine;
 $("#heroSub").textContent = SHOP.heroSub;
-$("#aboutText").innerHTML = SHOP.about.map(p=>`<p>${p}</p>`).join("") + `<p>IG <b style="font-weight:400;color:var(--ink)">@${SHOP.instagram}</b></p>`;
+$("#aboutText").innerHTML = SHOP.about.map(p=>`<p>${p}</p>`).join("") + `<p>IG <a href="https://www.instagram.com/${SHOP.instagram}/" target="_blank" rel="noopener" style="color:var(--ink);text-underline-offset:3px">@${SHOP.instagram}</a></p>`;
 $("#copy").textContent = `© ${new Date().getFullYear()} ${SHOP.name} · 手作 · 全部作品數量有限`;
 $("#footPays").innerHTML = SHOP.payments.map(p=>`<span>${p.label}</span>`).join("");
 renderCollections(); saveCart();
