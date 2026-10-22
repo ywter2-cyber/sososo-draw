@@ -198,7 +198,6 @@ const SHOP = {
   name: "soso",
   currency: "HK$",
   instagram: "sososo_draw",          // 改成你嘅 IG
-  whatsapp: "+852 0000 0000",           // 改成你嘅聯絡電話
   heroMeta: "HANDMADE · HONG KONG · EST. 2026",
   heroLine: "在夢醒之前<br><span>留住一件小東西</span>",
   heroSub: "每件都是手工逐件製作，數量很少，賣完不一定會再做。",
@@ -209,9 +208,17 @@ const SHOP = {
   ],
 
   shipping: [
-    { id:"sf",   label:"順豐站自取（到付）", fee:0 },
-    { id:"post", label:"本地平郵",           fee:20 },
-    { id:"meet", label:"港鐵站面交",         fee:0 }
+    /* 全部郵寄：運費可以自己改 */
+    { id:"post",  label:"本地平郵",       fee:20 },
+    { id:"reg",   label:"本地掛號",       fee:40 },
+    { id:"intl",  label:"海外郵寄（空郵掛號）", fee:120 }
+  ],
+
+  /* 電話區號：客人結帳時揀 */
+  phoneCodes: [
+    ["+852","香港"],["+853","澳門"],["+886","台灣"],["+86","中國內地"],
+    ["+65","新加坡"],["+60","馬來西亞"],["+81","日本"],["+82","韓國"],
+    ["+66","泰國"],["+1","美國 / 加拿大"],["+44","英國"],["+61","澳洲"]
   ],
 
   /* 付款方式：想加減就改呢度，details 係客人落單後見到嘅付款資料 */
@@ -367,14 +374,18 @@ function renderCheckout(){
   $("#drawerBody").innerHTML = `
   <form id="coForm" novalidate>
     <label for="coName">姓名 *<input id="coName" required autocomplete="name"></label>
-    <label for="coContact">IG / WhatsApp / 電話 *<input id="coContact" required></label>
+    <div style="display:grid;gap:4px"><span style="font-size:12px;color:var(--ink-soft)">電話號碼 *</span>
+      <div style="display:grid;grid-template-columns:minmax(0,9em) minmax(0,1fr);gap:6px">
+        <select id="coCode" aria-label="地區區號">${SHOP.phoneCodes.map(([c,n])=>`<option value="${c}">${n} ${c}</option>`).join("")}</select>
+        <input id="coPhone" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="電話號碼" aria-label="電話號碼" required>
+      </div></div>
     <label for="coShip">取貨方式
       <select id="coShip">${SHOP.shipping.map(s=>`<option value="${s.id}">${s.label}${s.fee?` (+${money(s.fee)})`:""}</option>`).join("")}</select></label>
-    <label for="coAddr">地址 / 順豐站編號 / 面交地點<input id="coAddr"></label>
+    <label for="coAddr">郵寄地址 *<textarea id="coAddr" required placeholder="國家 / 地區、城市、街道、大廈、樓層及單位"></textarea></label>
     <div><div style="font-size:12px;color:var(--ink-soft);margin-bottom:6px">付款方式</div>
       <div class="pay-opt">${SHOP.payments.map((p,i)=>`<label><input type="radio" name="pay" value="${p.id}" id="pay-${p.id}" ${i===0?"checked":""}>${p.label}</label>`).join("")}</div></div>
     <label for="coNote">備註<textarea id="coNote"></textarea></label>
-    <p id="coErr" style="color:var(--accent);font-size:12px;margin:0" hidden>請填寫姓名和聯絡方式。</p>
+    <p id="coErr" style="color:var(--accent);font-size:12px;margin:0" hidden></p>
   </form>`;
   const foot = () => { const s=SHOP.shipping.find(x=>x.id===$("#coShip").value);
     $("#drawerFoot").innerHTML = `<div class="row"><span>小計</span><span>${money(subtotal())}</span></div>
@@ -386,15 +397,17 @@ function renderCheckout(){
 }
 function placeOrder(e){
   e.preventDefault();
-  const name=$("#coName").value.trim(), contact=$("#coContact").value.trim();
-  if(!name||!contact){ $("#coErr").hidden=false; return; }
+  const name=$("#coName").value.trim(), digits=$("#coPhone").value.replace(/[\s-]/g,""), addr=$("#coAddr").value.trim();
+  const err = !name ? "請填寫姓名。" : !/^\d{6,15}$/.test(digits) ? "請填寫正確的電話號碼（只限數字）。" : !addr ? "請填寫郵寄地址。" : "";
+  if(err){ $("#coErr").textContent=err; $("#coErr").hidden=false; return; }
+  const contact = `${$("#coCode").value} ${digits}`;
   const ship=SHOP.shipping.find(x=>x.id===$("#coShip").value);
   const pay=SHOP.payments.find(p=>p.id===document.querySelector('input[name="pay"]:checked').value);
   const no = "SO" + Date.now().toString().slice(-6);
   const lines = Object.entries(cart).map(([id,q])=>{const p=byId(id);return `${p.code} ${p.name} × ${q}  ${money(p.price*q)}`});
   const total = subtotal()+ship.fee;
   const text = [`訂單 ${no}`, ...lines, `運費 ${money(ship.fee)}（${ship.label}）`, `總數 ${money(total)}`, ``,
-    `姓名：${name}`, `聯絡：${contact}`, `地址：${$("#coAddr").value.trim()||"—"}`, `付款：${pay.label}`, $("#coNote").value.trim()?`備註：${$("#coNote").value.trim()}`:""].filter(Boolean).join("\n");
+    `姓名：${name}`, `電話：${contact}`, `地址：${addr}`, `付款：${pay.label}`, $("#coNote").value.trim()?`備註：${$("#coNote").value.trim()}`:""].filter(Boolean).join("\n");
   $("#drawerTitle").textContent="訂單已建立";
   $("#drawerBody").innerHTML = `
     <div style="display:grid;gap:14px">
@@ -403,7 +416,7 @@ function placeOrder(e){
       <p style="margin:0;font-size:12px;color:var(--ink-soft)">${SHOP.orderNote}</p>
       <div style="font-size:12px;color:var(--ink-soft)">訂單內容</div>
       <div class="note" id="orderText">${text}</div>
-      <div class="note">IG：@${SHOP.instagram}<br>WhatsApp：${SHOP.whatsapp}</div>
+      <div class="note">IG：@${SHOP.instagram}</div>
     </div>`;
   $("#drawerFoot").innerHTML = (pay.paypalMe ? `<a class="btn" href="https://paypal.me/${pay.paypalMe}/${total}HKD" target="_blank" rel="noopener">前往 PayPal 付款 ${money(total)}</a>` : "") + `<button class="btn" id="copyOrder">複製訂單內容</button>
     <a class="btn" href="https://instagram.com/${SHOP.instagram}" target="_blank" rel="noopener">前往 IG 傳送</a>`;
