@@ -231,10 +231,9 @@ const SHOP = {
   ],
 
   shipping: [
-    /* 全部郵寄：運費可以自己改 */
-    { id:"post",  label:"本地平郵",       fee:20 },
-    { id:"reg",   label:"本地掛號",       fee:40 },
-    { id:"intl",  label:"海外郵寄（空郵掛號）", fee:120 }
+    /* 只用順豐速運（香港本地）。運費參考順豐香港本地價目表 0.5kg 收費，可以自己改 */
+    { id:"sf-door", label:"順豐速運・送貨上門",       fee:20, addrLabel:"收件地址 *", addrHint:"地區、街道、大廈、樓層及單位" },
+    { id:"sf-pick", label:"順豐速運・順豐站 / 自提點自取", fee:16, addrLabel:"順豐站 / 自提點 *", addrHint:"網點編號或地址（可於順豐官網查詢）" }
   ],
 
   /* 電話區號：客人結帳時揀 */
@@ -246,14 +245,10 @@ const SHOP = {
 
   /* 付款方式：想加減就改呢度，details 係客人落單後見到嘅付款資料 */
   payments: [
-    { id:"fps",    label:"轉數快 FPS",  details:"FPS ID：0000000\n收款人：SOSO" },
-    { id:"payme",  label:"PayMe",       details:"PayMe 連結 / QR：請於 IG 索取" },
-    { id:"alipay", label:"AlipayHK",    details:"AlipayHK 電話：+852 0000 0000" },
-    { id:"bank",   label:"銀行轉帳",     details:"銀行：XXX 銀行\n戶口：000-000000-000\n戶名：SOSO" },
     /* PayPal：將 paypalMe 改成你嘅 PayPal.Me 用戶名（paypal.me/ 後面嗰段） */
     { id:"paypal", label:"PayPal",      details:"撳下面「前往 PayPal 付款」，金額會自動填好。\n付款時請在備註寫上訂單號碼。", paypalMe:"YuenHingChung579" }
   ],
-  orderNote: "付款後請將「訂單內容」連同付款截圖 DM 到 IG，確認後 3–5 個工作天寄出。",
+  orderNote: "確認收到 PayPal 付款後，3–5 個工作天內以順豐速運寄出。有問題可以 DM IG。",
 
   collections: [
     { id:"subculture", title:"亞文化 飾品", en:"SUBCULTURE · ACCESSORIES",
@@ -407,9 +402,9 @@ function renderCheckout(){
         <select id="coCode" aria-label="地區區號">${SHOP.phoneCodes.map(([c,n])=>`<option value="${c}">${n} ${c}</option>`).join("")}</select>
         <input id="coPhone" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="電話號碼" aria-label="電話號碼" required>
       </div></div>
-    <label for="coShip">取貨方式
+    <label for="coShip">送遞方式（只限香港，順豐速運）
       <select id="coShip">${SHOP.shipping.map(s=>`<option value="${s.id}">${s.label}${s.fee?` (+${money(s.fee)})`:""}</option>`).join("")}</select></label>
-    <label for="coAddr">郵寄地址 *<textarea id="coAddr" required placeholder="國家 / 地區、城市、街道、大廈、樓層及單位"></textarea></label>
+    <label for="coAddr"><span id="coAddrLabel">收件地址 *</span><textarea id="coAddr" required placeholder="地區、街道、大廈、樓層及單位"></textarea></label>
     <div><div style="font-size:12px;color:var(--ink-soft);margin-bottom:6px">付款方式</div>
       <div class="pay-opt">${SHOP.payments.map((p,i)=>`<label><input type="radio" name="pay" value="${p.id}" id="pay-${p.id}" ${i===0?"checked":""}>${p.label}</label>`).join("")}</div></div>
     <label for="coNote">備註<textarea id="coNote"></textarea></label>
@@ -421,12 +416,13 @@ function renderCheckout(){
     <div class="row" style="color:var(--ink)"><span>總數 TOTAL</span><span>${money(subtotal()+s.fee)}</span></div>
     <button class="btn" type="submit" form="coForm">確認訂單</button>
     <button class="rm" id="backCart">← 返回購物袋</button>`; };
-  foot(); $("#coShip").addEventListener("change",foot);
+  const addrSync = () => { const s=SHOP.shipping.find(x=>x.id===$("#coShip").value); $("#coAddrLabel").textContent=s.addrLabel||"收件地址 *"; $("#coAddr").placeholder=s.addrHint||""; };
+  foot(); addrSync(); $("#coShip").addEventListener("change",()=>{foot();addrSync();});
 }
 function placeOrder(e){
   e.preventDefault();
   const name=$("#coName").value.trim(), digits=$("#coPhone").value.replace(/[\s-]/g,""), addr=$("#coAddr").value.trim();
-  const err = !name ? "請填寫姓名。" : !/^\d{6,15}$/.test(digits) ? "請填寫正確的電話號碼（只限數字）。" : !addr ? "請填寫郵寄地址。" : "";
+  const err = !name ? "請填寫姓名。" : !/^\d{6,15}$/.test(digits) ? "請填寫正確的電話號碼（只限數字）。" : !addr ? "請填寫收件地址或順豐自取點。" : "";
   if(err){ $("#coErr").textContent=err; $("#coErr").hidden=false; return; }
   const contact = `${$("#coCode").value} ${digits}`;
   const ship=SHOP.shipping.find(x=>x.id===$("#coShip").value);
@@ -435,7 +431,7 @@ function placeOrder(e){
   const lines = Object.entries(cart).map(([id,q])=>{const p=byId(id);return `${p.code} ${p.name} × ${q}  ${money(p.price*q)}`});
   const total = subtotal()+ship.fee;
   const text = [`訂單 ${no}`, ...lines, `運費 ${money(ship.fee)}（${ship.label}）`, `總數 ${money(total)}`, ``,
-    `姓名：${name}`, `電話：${contact}`, `地址：${addr}`, `付款：${pay.label}`, $("#coNote").value.trim()?`備註：${$("#coNote").value.trim()}`:""].filter(Boolean).join("\n");
+    `姓名：${name}`, `電話：${contact}`, `${ship.addrLabel?ship.addrLabel.replace(" *",""):"地址"}：${addr}`, `付款：${pay.label}`, $("#coNote").value.trim()?`備註：${$("#coNote").value.trim()}`:""].filter(Boolean).join("\n");
   $("#drawerTitle").textContent="訂單已建立";
   $("#drawerBody").innerHTML = `
     <div style="display:grid;gap:14px">
