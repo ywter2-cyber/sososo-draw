@@ -176,6 +176,7 @@ textarea{min-height:60px;resize:vertical}
       <span class="meta" id="heroMeta">HANDMADE · HONG KONG · EST. 2026</span>
       <h1 id="heroLine">在夢醒之前<br><span>留住一件小東西</span></h1>
       <p id="heroSub">每件都是手工逐件製作，數量很少，賣完不一定會再做。</p>
+      <span class="meta" id="heroShip"></span>
       <a class="explore" href="#subculture">探索作品 &nbsp;Explore the Collection</a>
     </div>
   </section>
@@ -235,6 +236,8 @@ const SHOP = {
     { id:"sf-door", label:"順豐速運・送貨上門",       fee:30, addrLabel:"收件地址 *", addrHint:"地區、街道、大廈、樓層及單位" },
     { id:"sf-pick", label:"順豐速運・順豐站 / 自提點自取", fee:30, addrLabel:"順豐站 / 自提點 *", addrHint:"網點編號或地址（可於順豐官網查詢）" }
   ],
+
+  freeShippingOver: 350,   // 買滿呢個金額免運費（0 = 冇免運）
 
   /* 電話區號：客人結帳時揀 */
   phoneCodes: [
@@ -373,6 +376,7 @@ function openProduct(id, img=0){
 }
 
 /* cart */
+function shipFee(s){ return SHOP.freeShippingOver && subtotal()>=SHOP.freeShippingOver ? 0 : s.fee; }
 function cartCount(){return Object.values(cart).reduce((a,b)=>a+b,0)}
 function subtotal(){return Object.entries(cart).reduce((s,[id,q])=>s+(byId(id)?.price||0)*q,0)}
 function saveCart(){
@@ -389,7 +393,9 @@ function renderCart(){
         <div class="qty"><button data-dec="${id}" aria-label="減少">−</button>${cart[id]}<button data-inc="${id}" aria-label="增加" ${cart[id]>=p.stock?"disabled":""}>+</button></div></div>
       <div style="text-align:right"><div class="price">${money(p.price*cart[id])}</div><button class="rm" data-rm="${id}">移除</button></div>
     </div>`}).join("") : `<p class="empty">購物袋是空的<br>去看看有沒有喜歡的東西吧</p>`;
+  const gap = SHOP.freeShippingOver - subtotal();
   $("#drawerFoot").innerHTML = `<div class="row"><span>小計 SUBTOTAL</span><span>${money(subtotal())}</span></div>
+    ${ids.length && SHOP.freeShippingOver ? `<p style="margin:0;font-size:11px;color:var(--ink-soft);letter-spacing:.06em">${gap>0?`再買 ${money(gap)} 即可免運費`:`已達免運費門檻`}</p>`:""}
     <button class="btn" id="toCheckout" ${ids.length?"":"disabled"}>結帳 CHECKOUT</button>`;
 }
 function renderCheckout(){
@@ -403,7 +409,7 @@ function renderCheckout(){
         <input id="coPhone" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="電話號碼" aria-label="電話號碼" required>
       </div></div>
     <label for="coShip">送遞方式（只限香港，順豐速運）
-      <select id="coShip">${SHOP.shipping.map(s=>`<option value="${s.id}">${s.label}${s.fee?` (+${money(s.fee)})`:""}</option>`).join("")}</select></label>
+      <select id="coShip">${SHOP.shipping.map(s=>`<option value="${s.id}">${s.label}${shipFee(s)?` (+${money(shipFee(s))})`:"（免運費）"}</option>`).join("")}</select></label>
     <label for="coAddr"><span id="coAddrLabel">收件地址 *</span><textarea id="coAddr" required placeholder="地區、街道、大廈、樓層及單位"></textarea></label>
     <div><div style="font-size:12px;color:var(--ink-soft);margin-bottom:6px">付款方式</div>
       <div class="pay-opt">${SHOP.payments.map((p,i)=>`<label><input type="radio" name="pay" value="${p.id}" id="pay-${p.id}" ${i===0?"checked":""}>${p.label}</label>`).join("")}</div></div>
@@ -412,8 +418,8 @@ function renderCheckout(){
   </form>`;
   const foot = () => { const s=SHOP.shipping.find(x=>x.id===$("#coShip").value);
     $("#drawerFoot").innerHTML = `<div class="row"><span>小計</span><span>${money(subtotal())}</span></div>
-    <div class="row"><span>運費</span><span>${money(s.fee)}</span></div>
-    <div class="row" style="color:var(--ink)"><span>總數 TOTAL</span><span>${money(subtotal()+s.fee)}</span></div>
+    <div class="row"><span>運費</span><span>${shipFee(s)?money(shipFee(s)):`免運費 <s style="opacity:.5">${money(s.fee)}</s>`}</span></div>
+    <div class="row" style="color:var(--ink)"><span>總數 TOTAL</span><span>${money(subtotal()+shipFee(s))}</span></div>
     <button class="btn" type="submit" form="coForm">確認訂單</button>
     <button class="rm" id="backCart">← 返回購物袋</button>`; };
   const addrSync = () => { const s=SHOP.shipping.find(x=>x.id===$("#coShip").value); $("#coAddrLabel").textContent=s.addrLabel||"收件地址 *"; $("#coAddr").placeholder=s.addrHint||""; };
@@ -429,8 +435,8 @@ function placeOrder(e){
   const pay=SHOP.payments.find(p=>p.id===document.querySelector('input[name="pay"]:checked').value);
   const no = "SO" + Date.now().toString().slice(-6);
   const lines = Object.entries(cart).map(([id,q])=>{const p=byId(id);return `${p.code} ${p.name} × ${q}  ${money(p.price*q)}`});
-  const total = subtotal()+ship.fee;
-  const text = [`訂單 ${no}`, ...lines, `運費 ${money(ship.fee)}（${ship.label}）`, `總數 ${money(total)}`, ``,
+  const fee = shipFee(ship), total = subtotal()+fee;
+  const text = [`訂單 ${no}`, ...lines, `運費 ${fee?money(fee):"免運費"}（${ship.label}）`, `總數 ${money(total)}`, ``,
     `姓名：${name}`, `電話：${contact}`, `${ship.addrLabel?ship.addrLabel.replace(" *",""):"地址"}：${addr}`, `付款：${pay.label}`, $("#coNote").value.trim()?`備註：${$("#coNote").value.trim()}`:""].filter(Boolean).join("\n");
   $("#drawerTitle").textContent="訂單已建立";
   $("#drawerBody").innerHTML = `
@@ -481,6 +487,7 @@ $("#shopName").textContent = SHOP.name;
 $("#heroMeta").textContent = SHOP.heroMeta;
 $("#heroLine").innerHTML = SHOP.heroLine;
 $("#heroSub").textContent = SHOP.heroSub;
+$("#heroShip").textContent = SHOP.freeShippingOver ? `順豐寄出 · 滿 ${money(SHOP.freeShippingOver)} 免運費` : "";
 $("#aboutText").innerHTML = SHOP.about.map(p=>`<p>${p}</p>`).join("") + `<p>IG <a href="https://www.instagram.com/${SHOP.instagram}/" target="_blank" rel="noopener" style="color:var(--ink);text-underline-offset:3px">@${SHOP.instagram}</a></p>`;
 $("#copy").textContent = `© ${new Date().getFullYear()} ${SHOP.name} · 手作 · 全部作品數量有限`;
 $("#footPays").innerHTML = SHOP.payments.map(p=>`<span>${p.label}</span>`).join("");
