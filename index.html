@@ -237,7 +237,8 @@ const SHOP = {
     { id:"sf-pick", label:"順豐速運・順豐站 / 自提點自取", fee:30, addrLabel:"順豐站 / 自提點 *", addrHint:"網點編號或地址（可於順豐官網查詢）" }
   ],
 
-  freeShippingOver: 399,   // 買滿呢個金額免運費（0 = 冇免運）
+  freeShippingOver: 399,
+  orderEmail: "ywter2@gmail.com",   // 新訂單會自動 email 去呢個地址（經 FormSubmit 發送）   // 買滿呢個金額免運費（0 = 冇免運）
 
   /* 電話區號：客人結帳時揀 */
   phoneCodes: [
@@ -431,6 +432,7 @@ function placeOrder(e){
   const err = !name ? "請填寫姓名。" : !/^\d{6,15}$/.test(digits) ? "請填寫正確的電話號碼（只限數字）。" : !addr ? "請填寫收件地址或順豐自取點。" : "";
   if(err){ $("#coErr").textContent=err; $("#coErr").hidden=false; return; }
   const contact = `${$("#coCode").value} ${digits}`;
+  const note = $("#coNote").value.trim();
   const ship=SHOP.shipping.find(x=>x.id===$("#coShip").value);
   const pay=SHOP.payments.find(p=>p.id===document.querySelector('input[name="pay"]:checked').value);
   const no = "SO" + Date.now().toString().slice(-6);
@@ -447,11 +449,30 @@ function placeOrder(e){
       <div style="font-size:12px;color:var(--ink-soft)">訂單內容</div>
       <div class="note" id="orderText">${text}</div>
       <div class="note">IG：@${SHOP.instagram}</div>
+      <p id="sendStatus" style="margin:0;font-size:12px;color:var(--ink-soft)">正在將訂單傳送給店主…</p>
     </div>`;
   $("#drawerFoot").innerHTML = (pay.paypalMe ? `<a class="btn" href="https://paypal.me/${pay.paypalMe}/${total}HKD" target="_blank" rel="noopener">前往 PayPal 付款 ${money(total)}</a>` : "") + `<button class="btn" id="copyOrder">複製訂單內容</button>
     <a class="btn" href="https://instagram.com/${SHOP.instagram}" target="_blank" rel="noopener">前往 IG 傳送</a>`;
   window._orderText = text;
+  sendOrder({
+    _subject: `soso 新訂單 ${no} · ${money(total)}`, _template: "table", _captcha: "false",
+    "訂單號碼": no, "落單時間": new Date().toLocaleString("zh-HK",{timeZone:"Asia/Hong_Kong"}),
+    "產品": lines.join("\n"), "小計": money(subtotal()), "運費": fee?money(fee):"免運費", "總數": money(total),
+    "顧客姓名": name, "電話": contact, "送遞方式": ship.label,
+    [ship.addrLabel?ship.addrLabel.replace(" *",""):"地址"]: addr,
+    "付款方式": pay.label, "備註": note||"—"
+  });
   cart = {}; saveCart();
+}
+
+/* 自動 email 訂單畀店主 */
+function sendOrder(data){
+  const st = () => $("#sendStatus");
+  if(!SHOP.orderEmail){ st()&&st().remove(); return; }
+  fetch(`https://formsubmit.co/ajax/${SHOP.orderEmail}`, { method:"POST", headers:{"Content-Type":"application/json","Accept":"application/json"}, body: JSON.stringify(data) })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(j => { if(String(j.success)!=="true") throw 0; if(st()) st().textContent = "✓ 訂單已自動傳送給店主。"; })
+    .catch(() => { if(st()) st().textContent = "訂單未能自動傳送，請按「複製訂單內容」再 DM IG。"; });
 }
 
 /* open / close */
