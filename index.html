@@ -164,6 +164,7 @@ textarea{min-height:60px;resize:vertical}
       <a href="#subculture">亞文化 飾品</a>
       <a href="#dreamcore">夢核 雜貨</a>
       <a href="#about">關於</a>
+      <a href="#contact">聯絡</a>
     </nav>
     <button class="cart-btn" id="openCart" aria-label="打開購物袋">BAG (<span id="cartCount">0</span>)</button>
   </div>
@@ -186,6 +187,11 @@ textarea{min-height:60px;resize:vertical}
   <section class="about" id="about">
     <h2>關於 About</h2>
     <div id="aboutText"></div>
+  </section>
+
+  <section class="about" id="contact">
+    <h2>聯絡 Contact</h2>
+    <div id="contactText"></div>
   </section>
 </main>
 
@@ -238,7 +244,11 @@ const SHOP = {
   ],
 
   freeShippingOver: 399,
-  orderEmail: "ywter2@gmail.com",   // 新訂單會自動 email 去呢個地址（經 FormSubmit 發送）   // 買滿呢個金額免運費（0 = 冇免運）
+  orderEmail: "ywter2@gmail.com",   // 店主收單 + 顧客聯絡用嘅電郵
+  /* EmailJS：填好之後，落單會自動發兩封信（店主收單通知 + 顧客訂單確認）。
+     未填之前，只會經 FormSubmit 發收單通知畀店主。範本喺 email-templates/ 資料夾 */
+  emailjs: { publicKey:"", serviceId:"", ownerTemplate:"", customerTemplate:"" },
+  contactNote: "想訂製款式，或者收到貨有任何問題，歡迎 DM IG 或 email 聯絡，通常一至兩日內回覆。",   // 買滿呢個金額免運費（0 = 冇免運）
 
   /* 電話區號：客人結帳時揀 */
   phoneCodes: [
@@ -252,7 +262,7 @@ const SHOP = {
     /* PayPal：將 paypalMe 改成你嘅 PayPal.Me 用戶名（paypal.me/ 後面嗰段） */
     { id:"paypal", label:"PayPal",      details:"撳下面「前往 PayPal 付款」，金額會自動填好。\n付款時請在備註寫上訂單號碼。", paypalMe:"YuenHingChung579" }
   ],
-  orderNote: "確認收到 PayPal 付款後，3–5 個工作天內以順豐速運寄出。有問題可以 DM IG。",
+  orderNote: "確認收到 PayPal 付款後，約 5 個工作天內以順豐速運寄出。有問題可以 DM IG 或 email。",
 
   collections: [
     { id:"subculture", title:"亞文化 飾品", en:"SUBCULTURE · ACCESSORIES",
@@ -409,6 +419,7 @@ function renderCheckout(){
         <select id="coCode" aria-label="地區區號">${SHOP.phoneCodes.map(([c,n])=>`<option value="${c}">${n} ${c}</option>`).join("")}</select>
         <input id="coPhone" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="電話號碼" aria-label="電話號碼" required>
       </div></div>
+    <label for="coEmail">電郵 *<input id="coEmail" type="email" inputmode="email" autocomplete="email" required placeholder="訂單確認會寄到呢個電郵"></label>
     <label for="coShip">送遞方式（只限香港，順豐速運）
       <select id="coShip">${SHOP.shipping.map(s=>`<option value="${s.id}">${s.label}${shipFee(s)?` (+${money(shipFee(s))})`:"（免運費）"}</option>`).join("")}</select></label>
     <label for="coAddr"><span id="coAddrLabel">收件地址 *</span><textarea id="coAddr" required placeholder="地區、街道、大廈、樓層及單位"></textarea></label>
@@ -428,8 +439,8 @@ function renderCheckout(){
 }
 function placeOrder(e){
   e.preventDefault();
-  const name=$("#coName").value.trim(), digits=$("#coPhone").value.replace(/[\s-]/g,""), addr=$("#coAddr").value.trim();
-  const err = !name ? "請填寫姓名。" : !/^\d{6,15}$/.test(digits) ? "請填寫正確的電話號碼（只限數字）。" : !addr ? "請填寫收件地址或順豐自取點。" : "";
+  const name=$("#coName").value.trim(), digits=$("#coPhone").value.replace(/[\s-]/g,""), addr=$("#coAddr").value.trim(), email=$("#coEmail").value.trim();
+  const err = !name ? "請填寫姓名。" : !/^\d{6,15}$/.test(digits) ? "請填寫正確的電話號碼（只限數字）。" : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? "請填寫正確的電郵地址。" : !addr ? "請填寫收件地址或順豐自取點。" : "";
   if(err){ $("#coErr").textContent=err; $("#coErr").hidden=false; return; }
   const contact = `${$("#coCode").value} ${digits}`;
   const note = $("#coNote").value.trim();
@@ -439,7 +450,7 @@ function placeOrder(e){
   const lines = Object.entries(cart).map(([id,q])=>{const p=byId(id);return `${p.code} ${p.name} × ${q}  ${money(p.price*q)}`});
   const fee = shipFee(ship), total = subtotal()+fee;
   const text = [`訂單 ${no}`, ...lines, `運費 ${fee?money(fee):"免運費"}（${ship.label}）`, `總數 ${money(total)}`, ``,
-    `姓名：${name}`, `電話：${contact}`, `${ship.addrLabel?ship.addrLabel.replace(" *",""):"地址"}：${addr}`, `付款：${pay.label}`, $("#coNote").value.trim()?`備註：${$("#coNote").value.trim()}`:""].filter(Boolean).join("\n");
+    `姓名：${name}`, `電話：${contact}`, `電郵：${email}`, `${ship.addrLabel?ship.addrLabel.replace(" *",""):"地址"}：${addr}`, `付款：${pay.label}`, $("#coNote").value.trim()?`備註：${$("#coNote").value.trim()}`:""].filter(Boolean).join("\n");
   $("#drawerTitle").textContent="訂單已建立";
   $("#drawerBody").innerHTML = `
     <div style="display:grid;gap:14px">
@@ -448,31 +459,48 @@ function placeOrder(e){
       <p style="margin:0;font-size:12px;color:var(--ink-soft)">${SHOP.orderNote}</p>
       <div style="font-size:12px;color:var(--ink-soft)">訂單內容</div>
       <div class="note" id="orderText">${text}</div>
-      <div class="note">IG：@${SHOP.instagram}</div>
+      <div class="note">IG：@${SHOP.instagram}<br>Email：${SHOP.orderEmail}</div>
       <p id="sendStatus" style="margin:0;font-size:12px;color:var(--ink-soft)">正在將訂單傳送給店主…</p>
     </div>`;
   $("#drawerFoot").innerHTML = (pay.paypalMe ? `<a class="btn" href="https://paypal.me/${pay.paypalMe}/${total}HKD" target="_blank" rel="noopener">前往 PayPal 付款 ${money(total)}</a>` : "") + `<button class="btn" id="copyOrder">複製訂單內容</button>
     <a class="btn" href="https://instagram.com/${SHOP.instagram}" target="_blank" rel="noopener">前往 IG 傳送</a>`;
   window._orderText = text;
+  const addrLabel = ship.addrLabel ? ship.addrLabel.replace(" *","") : "地址";
   sendOrder({
-    _subject: `soso 新訂單 ${no} · ${money(total)}`, _template: "table", _captcha: "false",
-    "訂單號碼": no, "落單時間": new Date().toLocaleString("zh-HK",{timeZone:"Asia/Hong_Kong"}),
-    "產品": lines.join("\n"), "小計": money(subtotal()), "運費": fee?money(fee):"免運費", "總數": money(total),
-    "顧客姓名": name, "電話": contact, "送遞方式": ship.label,
-    [ship.addrLabel?ship.addrLabel.replace(" *",""):"地址"]: addr,
-    "付款方式": pay.label, "備註": note||"—"
+    order_no: no, order_time: new Date().toLocaleString("zh-HK",{timeZone:"Asia/Hong_Kong"}),
+    items: lines.join("\n"), subtotal: money(subtotal()), shipping: fee?money(fee):"免運費", total: money(total),
+    customer_name: name, customer_email: email, phone: contact, ship_method: ship.label,
+    address_label: addrLabel, address: addr, pay_method: pay.label,
+    paypal_link: pay.paypalMe ? `https://paypal.me/${pay.paypalMe}/${total}HKD` : "",
+    note: note||"—", shop_email: SHOP.orderEmail, shop_ig: "@"+SHOP.instagram
   });
   cart = {}; saveCart();
 }
 
 /* 自動 email 訂單畀店主 */
-function sendOrder(data){
+function sendOrder(d){
   const st = () => $("#sendStatus");
+  const done = msg => { if(st()) st().textContent = msg; };
+  const fail = () => done("訂單未能自動傳送，請按「複製訂單內容」再 DM IG 或 email 給我們。");
+  const ej = SHOP.emailjs || {};
+  if(ej.publicKey && ej.serviceId){
+    const send = tpl => fetch("https://api.emailjs.com/api/v1.0/email/send", { method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ service_id: ej.serviceId, template_id: tpl, user_id: ej.publicKey, template_params: d }) })
+      .then(r => r.ok ? r : Promise.reject());
+    Promise.all([send(ej.ownerTemplate), send(ej.customerTemplate)])
+      .then(() => done(`✓ 訂單已傳送給店主，確認電郵已寄到 ${d.customer_email}（如未收到請檢查垃圾郵件）。`))
+      .catch(fail);
+    return;
+  }
   if(!SHOP.orderEmail){ st()&&st().remove(); return; }
-  fetch(`https://formsubmit.co/ajax/${SHOP.orderEmail}`, { method:"POST", headers:{"Content-Type":"application/json","Accept":"application/json"}, body: JSON.stringify(data) })
+  fetch(`https://formsubmit.co/ajax/${SHOP.orderEmail}`, { method:"POST", headers:{"Content-Type":"application/json","Accept":"application/json"},
+    body: JSON.stringify({ _subject:`soso 新訂單 ${d.order_no} · ${d.total}`, _template:"table", _captcha:"false", _replyto:d.customer_email,
+      "訂單號碼":d.order_no, "落單時間":d.order_time, "產品":d.items, "小計":d.subtotal, "運費":d.shipping, "總數":d.total,
+      "顧客姓名":d.customer_name, "電郵":d.customer_email, "電話":d.phone, "送遞方式":d.ship_method, [d.address_label]:d.address,
+      "付款方式":d.pay_method, "備註":d.note }) })
     .then(r => r.ok ? r.json() : Promise.reject())
-    .then(j => { if(String(j.success)!=="true") throw 0; if(st()) st().textContent = "✓ 訂單已自動傳送給店主。"; })
-    .catch(() => { if(st()) st().textContent = "訂單未能自動傳送，請按「複製訂單內容」再 DM IG。"; });
+    .then(j => { if(String(j.success)!=="true") throw 0; done("✓ 訂單已自動傳送給店主。"); })
+    .catch(fail);
 }
 
 /* open / close */
@@ -510,6 +538,9 @@ $("#heroLine").innerHTML = SHOP.heroLine;
 $("#heroSub").textContent = SHOP.heroSub;
 $("#heroShip").textContent = SHOP.freeShippingOver ? `順豐寄出 · 滿 ${money(SHOP.freeShippingOver)} 免運費` : "";
 $("#aboutText").innerHTML = SHOP.about.map(p=>`<p>${p}</p>`).join("") + `<p>IG <a href="https://www.instagram.com/${SHOP.instagram}/" target="_blank" rel="noopener" style="color:var(--ink);text-underline-offset:3px">@${SHOP.instagram}</a></p>`;
+$("#contactText").innerHTML = `<p>${SHOP.contactNote}</p>
+  <p>IG <a href="https://www.instagram.com/${SHOP.instagram}/" target="_blank" rel="noopener" style="color:var(--ink);text-underline-offset:3px">@${SHOP.instagram}</a></p>
+  <p>Email <a href="mailto:${SHOP.orderEmail}" style="color:var(--ink);text-underline-offset:3px;user-select:all">${SHOP.orderEmail}</a></p>`;
 $("#copy").textContent = `© ${new Date().getFullYear()} ${SHOP.name} · 手作 · 全部作品數量有限`;
 $("#footPays").innerHTML = SHOP.payments.map(p=>`<span>${p.label}</span>`).join("");
 renderCollections(); saveCart();

@@ -1,0 +1,27 @@
+<!-- EmailJS 範本：店主收單通知
+     Subject:  【新訂單】{{order_no}} · {{total}} · {{customer_name}}
+     To Email: ywter2@gmail.com
+     From Name: soso 網店
+     Reply To: {{customer_email}} -->
+<div style="font-family:'PingFang TC','Microsoft JhengHei',Helvetica,Arial,sans-serif;color:#222;font-size:14px;line-height:1.8;max-width:560px;">
+  <p style="font-size:16px;margin:0 0 4px;"><b>有新訂單</b> {{order_no}}</p>
+  <p style="margin:0 0 14px;color:#777;font-size:12px;">{{order_time}} · 狀態：待付款（請到 PayPal 核對有冇收到 {{total}}）</p>
+  <table cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;font-size:14px;">
+    <tr style="background:#f2f2f4"><td colspan="2"><b>買咗咩</b></td></tr>
+    <tr><td colspan="2" style="white-space:pre-line;">{{items}}</td></tr>
+    <tr><td style="color:#777;width:110px;">小計</td><td>{{subtotal}}</td></tr>
+    <tr><td style="color:#777;">運費</td><td>{{shipping}}</td></tr>
+    <tr><td style="color:#777;">總數</td><td><b>{{total}}</b></td></tr>
+    <tr style="background:#f2f2f4"><td colspan="2"><b>顧客資料</b></td></tr>
+    <tr><td style="color:#777;">姓名</td><td>{{customer_name}}</td></tr>
+    <tr><td style="color:#777;">電話</td><td>{{phone}}</td></tr>
+    <tr><td style="color:#777;">電郵</td><td>{{customer_email}}</td></tr>
+    <tr style="background:#f2f2f4"><td colspan="2"><b>送遞</b></td></tr>
+    <tr><td style="color:#777;">方式</td><td>{{ship_method}}</td></tr>
+    <tr><td style="color:#777;">{{address_label}}</td><td>{{address}}</td></tr>
+    <tr style="background:#f2f2f4"><td colspan="2"><b>付款</b></td></tr>
+    <tr><td style="color:#777;">方式</td><td>{{pay_method}}</td></tr>
+    <tr><td style="color:#777;">備註</td><td>{{note}}</td></tr>
+  </table>
+  <p style="color:#777;font-size:12px;margin-top:14px;">直接回覆呢封信就會寄去顧客電郵。</p>
+</div>

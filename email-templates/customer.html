@@ -1,0 +1,61 @@
+<!-- EmailJS 範本：顧客訂單確認
+     Subject:  soso · 訂單確認 {{order_no}}
+     To Email: {{customer_email}}
+     From Name: soso
+     Reply To: ywter2@gmail.com -->
+<div style="margin:0;padding:24px 12px;background:#ecebee;font-family:'PingFang TC','Microsoft JhengHei','Noto Sans TC',Helvetica,Arial,sans-serif;color:#3b3a40;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#f5f4f6;border:1px solid #cfcdd4;">
+    <tr><td style="padding:28px 28px 8px;">
+      <div style="font-family:Georgia,'Songti TC',serif;font-size:20px;letter-spacing:8px;">soso</div>
+      <div style="font-family:Menlo,Consolas,monospace;font-size:10px;letter-spacing:2px;color:#8a8891;margin-top:4px;">HANDMADE · HONG KONG</div>
+    </td></tr>
+    <tr><td style="padding:16px 28px 4px;">
+      <div style="font-size:18px;letter-spacing:1px;">多謝你的訂單，{{customer_name}}</div>
+      <p style="font-size:13px;line-height:1.8;color:#6b6a72;margin:10px 0 0;">我們已收到你的訂單。確認收到 PayPal 付款後，貨品會在約 <b style="color:#3b3a40;font-weight:600;">5 個工作天內</b>以順豐速運寄出。</p>
+    </td></tr>
+    <tr><td style="padding:18px 28px 0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:12px;font-family:Menlo,Consolas,monospace;color:#8a8891;">
+        <tr><td>訂單號碼 {{order_no}}</td><td align="right">{{order_time}}</td></tr>
+      </table>
+    </td></tr>
+    <tr><td style="padding:10px 28px 0;">
+      <div style="border-top:1px solid #cfcdd4;border-bottom:1px solid #cfcdd4;padding:14px 0;font-size:14px;line-height:1.9;white-space:pre-line;">{{items}}</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;line-height:2;margin-top:8px;">
+        <tr><td style="color:#8a8891;">小計</td><td align="right">{{subtotal}}</td></tr>
+        <tr><td style="color:#8a8891;">運費</td><td align="right">{{shipping}}</td></tr>
+        <tr><td style="font-size:15px;padding-top:4px;">總數</td><td align="right" style="font-size:15px;padding-top:4px;font-weight:600;">{{total}}</td></tr>
+      </table>
+    </td></tr>
+    <tr><td style="padding:20px 28px 0;">
+      <div style="background:#ecebee;padding:14px 16px;font-size:13px;line-height:1.9;">
+        <div style="font-size:11px;letter-spacing:2px;color:#8a8891;margin-bottom:4px;">付款</div>
+        付款方式：{{pay_method}}<br>
+        付款連結：<a href="{{paypal_link}}" style="color:#3b3a40;">{{paypal_link}}</a><br>
+        <span style="color:#6b6a72;">付款時請在備註寫上訂單號碼 {{order_no}}。</span>
+      </div>
+    </td></tr>
+    <tr><td style="padding:12px 28px 0;">
+      <div style="background:#ecebee;padding:14px 16px;font-size:13px;line-height:1.9;">
+        <div style="font-size:11px;letter-spacing:2px;color:#8a8891;margin-bottom:4px;">送遞</div>
+        {{ship_method}}<br>
+        {{address_label}}：{{address}}<br>
+        收件人：{{customer_name}} · {{phone}}
+      </div>
+    </td></tr>
+    <tr><td style="padding:20px 28px 0;">
+      <div style="font-size:11px;letter-spacing:2px;color:#8a8891;margin-bottom:6px;">注意事項</div>
+      <ul style="margin:0;padding-left:18px;font-size:12px;line-height:1.9;color:#6b6a72;">
+        <li>請於 24 小時內完成付款，逾時未付款的訂單會被取消。</li>
+        <li>每件作品都是手工製作，細微的不一致屬正常，不屬瑕疵。</li>
+        <li>飾品請避免接觸水、香水和汗水，可保持光澤。</li>
+        <li>收貨後如有任何問題，請於 3 天內附上相片聯絡我們。</li>
+      </ul>
+    </td></tr>
+    <tr><td style="padding:22px 28px 28px;">
+      <div style="border-top:1px solid #cfcdd4;padding-top:14px;font-size:12px;line-height:1.9;color:#8a8891;">
+        訂製款式或任何問題：IG {{shop_ig}} · Email {{shop_email}}<br>
+        直接回覆這封電郵亦可。
+      </div>
+    </td></tr>
+  </table>
+</div>
